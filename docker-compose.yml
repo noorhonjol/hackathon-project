@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: hackathon-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hackathon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hackathon}
+      POSTGRES_DB: ${POSTGRES_DB:-hackathon}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hackathon}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: hackathon-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-hackathon}:${POSTGRES_PASSWORD:-hackathon}@db:5432/${POSTGRES_DB:-hackathon}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
+      S3_REGION: ${S3_REGION:-nyc3}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./backend/app:/code/app
+
+  # NOTE: the frontend is reached through Caddy (see below), so it is not
+  # exposed on the host directly. The container still listens on 5173 internally.
+
+  frontend:
+    build: ./frontend
+    container_name: hackathon-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    expose:
+      - "5173"
+    volumes:
+      - ./frontend:/code
+      - /code/node_modules
+    environment:
+      VITE_API_BASE_URL: /api
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: hackathon-caddy
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+
+volumes:
+  db_data:
