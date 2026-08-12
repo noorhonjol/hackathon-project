@@ -27,8 +27,9 @@ backend/app/api/router.py                                     # import & include
 - **Adding a backend route:** create `backend/app/api/routes/<name>.py` exporting an
   `APIRouter`, then `include_router` it in `backend/app/api/router.py`. Endpoints are
   mounted under the `/api` prefix. A `/api/hello` route is wired as the example.
-- **Entry point:** Caddy (`Caddyfile`) fronts the stack — serves the frontend and proxies
-  `/api/*` to the backend. Don't expose the frontend port directly; go through Caddy.
+- **Entry point:** Caddy (`Caddyfile`) is the **only** host-exposed service. It serves the
+  frontend and proxies `/api/*`, `/docs`, `/redoc`, `/openapi.json` to the backend. The
+  backend and frontend containers are internal-only (`expose`), not published to the host.
 - **Frontend data fetching:** add a hook in `src/hooks/` using `apiFetch` from
   `src/services/api.ts` (base path `/api`, proxied to the backend by Vite). API shapes
   go in `src/types/api.ts`.
@@ -41,7 +42,7 @@ backend/app/api/router.py                                     # import & include
 # one-time
 cp .env.example .env           # fill in DigitalOcean Spaces creds when ready
 
-# run everything (app via Caddy http://localhost:8080, API http://localhost:8000)
+# run everything (app + API via Caddy http://localhost:8080)
 docker compose up --build
 
 # backend only (needs a reachable DATABASE_URL, e.g. compose db on localhost:5432)

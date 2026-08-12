@@ -26,19 +26,20 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-hackathon}:${POSTGRES_PASSWORD:-hackathon}@db:5432/${POSTGRES_DB:-hackathon}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
       S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
       S3_REGION: ${S3_REGION:-nyc3}
       S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
       S3_BUCKET: ${S3_BUCKET:-}
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    expose:
+      - "8000"
     volumes:
       - ./backend/app:/code/app
 
-  # NOTE: the frontend is reached through Caddy (see below), so it is not
-  # exposed on the host directly. The container still listens on 5173 internally.
+  # The backend and frontend are intentionally NOT exposed on the host — both are
+  # reached only through Caddy (see the caddy service). They listen on their
+  # internal ports (8000 / 5173) for the proxy to forward to.
 
   frontend:
     build: ./frontend
