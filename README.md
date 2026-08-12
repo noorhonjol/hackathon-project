@@ -18,14 +18,16 @@ cp .env.example .env          # edit .env to add DigitalOcean Spaces creds (opti
 docker compose up --build
 ```
 
-- App (via Caddy reverse proxy): http://localhost:8080
-- API docs (Swagger): http://localhost:8080/docs
+- App (via Caddy reverse proxy): http://localhost
+- API docs (Swagger): http://localhost/docs
 - Postgres: `localhost:5432` (user/pass/db from `.env`, defaults `hackathon`/`hackathon`/`hackathon`)
 
-Caddy is the **only** host-exposed service. The backend and frontend containers are
-internal-only (`expose`) and are reached solely through Caddy: `/api/*`, `/docs`,
-`/redoc`, `/openapi.json` → backend; everything else → frontend. To use a real domain
-with auto-HTTPS, swap `:80` in the `Caddyfile` for your domain.
+Caddy is the **only** host-exposed service, on port 80 by default (`WEB_PORT`, see
+`.env`). The backend and frontend containers are internal-only (`expose`) and are
+reached solely through Caddy: `/api/*`, `/docs`, `/redoc`, `/openapi.json` → backend;
+everything else → frontend. If port 80 is already taken on your machine (e.g. by IIS),
+free it or set `WEB_PORT=8080` in `.env` and use http://localhost:8080. To use a real
+domain with auto-HTTPS, swap `:80` in the `Caddyfile` for your domain.
 
 ## Configure object storage (DigitalOcean Spaces)
 
