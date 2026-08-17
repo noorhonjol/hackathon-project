@@ -11,7 +11,7 @@ export default defineConfig({
     port: 5173,
     // Caddy proxies to Vite with the original Host header; allow it so the dev
     // server's host check (Vite 5.4.x) doesn't 403 the request.
-    allowedHosts: ["localhost", "127.0.0.1"],
+    allowedHosts: ["localhost", "127.0.0.1", "142.93.111.119", "tanapp.tech", ".localhost"],
     proxy: {
       "/api": {
         target: "http://backend:8000",

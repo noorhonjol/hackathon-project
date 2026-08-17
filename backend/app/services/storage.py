@@ -1,37 +1,29 @@
-from typing import Any
+"""Local file storage for Qoffa report photos.
 
-import boto3
-from botocore.exceptions import BotoCoreError, ClientError
+Photos are saved to a mounted volume and served by Caddy at /uploads/.
+"""
 
-from app.core.config import settings
+import uuid
+from pathlib import Path
 
+UPLOAD_DIR = Path("/code/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-def get_s3_client() -> Any | None:
-    """Return a boto3 S3 client pointed at DigitalOcean Spaces, or None if not configured."""
-    if not (settings.s3_endpoint_url and settings.s3_access_key_id and settings.s3_secret_access_key):
-        return None
-    return boto3.client(
-        "s3",
-        endpoint_url=settings.s3_endpoint_url,
-        region_name=settings.s3_region,
-        aws_access_key_id=settings.s3_access_key_id,
-        aws_secret_access_key=settings.s3_secret_access_key,
-    )
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
-def storage_status() -> dict:
-    """Report whether object storage is configured and reachable. Never raises."""
-    client = get_s3_client()
-    if client is None:
-        return {"configured": False, "detail": "S3/Spaces credentials not set"}
+def save_photo(file_bytes: bytes, original_filename: str) -> str:
+    """Save a photo and return its public URL path."""
+    ext = Path(original_filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise ValueError(f"Unsupported file type: {ext}")
 
-    try:
-        client.list_buckets()
-        return {"configured": True, "bucket": settings.s3_bucket, "reachable": True}
-    except (BotoCoreError, ClientError) as exc:
-        return {
-            "configured": True,
-            "bucket": settings.s3_bucket,
-            "reachable": False,
-            "error": str(exc),
-        }
+    if len(file_bytes) > MAX_FILE_SIZE:
+        raise ValueError("File too large (max 5 MB)")
+
+    filename = f"{uuid.uuid4()}{ext}"
+    filepath = UPLOAD_DIR / filename
+    filepath.write_bytes(file_bytes)
+
+    return f"/uploads/{filename}"
