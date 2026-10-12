@@ -68,8 +68,7 @@ services:
       - backend
       - frontend
     ports:
-      - "${WEB_PORT:-80}:80"
-      - "443:443"
+      - "${WEB_PORT:-8080}:8080"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./uploads:/uploads

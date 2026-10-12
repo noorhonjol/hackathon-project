@@ -3,7 +3,7 @@
 	admin off
 }
 
-tanapp.tech {
+:8080 {
 	# Uploaded photos — served via backend static files
 	handle /uploads/* {
 		reverse_proxy backend:8000

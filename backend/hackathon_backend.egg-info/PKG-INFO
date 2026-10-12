@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: hackathon-backend
+Version: 0.1.0
+Summary: Hackathon Hello World backend (FastAPI + SQLModel + PostgreSQL + S3)
+Requires-Python: >=3.12
+Requires-Dist: fastapi==0.115.0
+Requires-Dist: uvicorn[standard]==0.30.6
+Requires-Dist: sqlmodel==0.0.22
+Requires-Dist: psycopg2-binary==2.9.9
+Requires-Dist: boto3==1.35.0
+Requires-Dist: pydantic-settings==2.5.2
+Requires-Dist: httpx==0.27.2
+Requires-Dist: python-multipart>=0.0.32

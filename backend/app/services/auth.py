@@ -1,3 +1,5 @@
+"""Supabase Auth service using publishable/secret keys (API-based verification)."""
+
 import httpx
 
 from app.core.config import settings
@@ -7,8 +9,8 @@ from app.exceptions import AuthProviderError
 class AuthService:
     def __init__(self):
         self.supabase_url = settings.supabase_url.rstrip("/")
-        self.anon_key = settings.supabase_anon_key
-        self.service_role_key = settings.supabase_service_role_key
+        self.publishable_key = settings.supabase_anon_key
+        self.secret_key = settings.supabase_service_role_key
 
     async def _request(
         self,
@@ -20,7 +22,7 @@ class AuthService:
         json: dict | None = None,
         params: dict | None = None,
     ) -> dict:
-        headers = {"apikey": api_key or self.anon_key}
+        headers = {"apikey": api_key or self.publishable_key}
         if token:
             headers["Authorization"] = f"Bearer {token}"
 
@@ -55,17 +57,18 @@ class AuthService:
         return data
 
     async def verify_token(self, token: str) -> dict:
+        """Verify token by calling Supabase GoTrue API."""
         return await self._request("GET", "/auth/v1/user", token=token)
 
     async def email_exists(self, email: str) -> bool:
-        if not self.service_role_key:
+        if not self.secret_key:
             return False
 
         data = await self._request(
             "GET",
             "/auth/v1/admin/users",
-            token=self.service_role_key,
-            api_key=self.service_role_key,
+            token=self.secret_key,
+            api_key=self.secret_key,
             params={"filter": email},
         )
         return any(
@@ -74,8 +77,8 @@ class AuthService:
         )
 
     async def list_users(self, per_page: int = 200) -> list[dict]:
-        if not self.service_role_key:
-            raise AuthProviderError("Service role key is not configured")
+        if not self.secret_key:
+            raise AuthProviderError("Secret key is not configured")
 
         users: list[dict] = []
         page = 1
@@ -83,8 +86,8 @@ class AuthService:
             data = await self._request(
                 "GET",
                 "/auth/v1/admin/users",
-                token=self.service_role_key,
-                api_key=self.service_role_key,
+                token=self.secret_key,
+                api_key=self.secret_key,
                 params={"page": page, "per_page": per_page},
             )
             batch = data.get("users") or []
