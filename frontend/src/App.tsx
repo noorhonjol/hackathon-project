@@ -62,6 +62,70 @@ function RootRedirect() {
   return <Navigate to="/store" replace />;
 }
 
+/** Redirects authenticated users with roles away from auth/onboarding pages. */
+function AuthPagesGuard({ children }: { children: React.ReactNode }) {
+  const { profile, loading } = useProfile();
+
+  if (loading) {
+    return (
+      <Center h="100vh">
+        <Spinner size="xl" />
+      </Center>
+    );
+  }
+
+  if (profile?.role) {
+    // User already has a role, redirect to their home
+    if (profile.role === "citizen") {
+      return <Navigate to="/citizen" replace />;
+    }
+    if (profile.role === "admin") {
+      return <Navigate to="/admin" replace />;
+    }
+    return <Navigate to="/store" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+/** Guards citizen-only routes. */
+function CitizenGuard({ children }: { children: React.ReactNode }) {
+  const { profile, loading } = useProfile();
+
+  if (loading) {
+    return (
+      <Center h="100vh">
+        <Spinner size="xl" />
+      </Center>
+    );
+  }
+
+  if (profile?.role !== "citizen") {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+/** Guards store-owner-only routes. */
+function StoreGuard({ children }: { children: React.ReactNode }) {
+  const { profile, loading } = useProfile();
+
+  if (loading) {
+    return (
+      <Center h="100vh">
+        <Spinner size="xl" />
+      </Center>
+    );
+  }
+
+  if (profile?.role !== "store_owner") {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 /** Wraps a child route in AuthGuard. */
 function Guarded({ children }: { children: React.ReactNode }) {
   return <AuthGuard>{children}</AuthGuard>;
@@ -75,42 +139,54 @@ export default function App() {
       {/* Public — login / signup */}
       <Route
         path="/login"
-        element={user ? <RootRedirect /> : <AuthScreen />}
+        element={
+          <AuthPagesGuard>
+            <AuthScreen />
+          </AuthPagesGuard>
+        }
       />
 
-      {/* Onboarding (requires auth) */}
+      {/* Onboarding (requires auth, but no role yet) */}
       <Route
         path="/onboarding/role"
         element={
-          <Guarded>
-            <RoleSelectScreen onSelect={() => {}} />
-          </Guarded>
+          <AuthPagesGuard>
+            <Guarded>
+              <RoleSelectScreen onSelect={() => {}} />
+            </Guarded>
+          </AuthPagesGuard>
         }
       />
       <Route
         path="/onboarding/name"
         element={
-          <Guarded>
-            <NameEntryScreen />
-          </Guarded>
+          <AuthPagesGuard>
+            <Guarded>
+              <NameEntryScreen />
+            </Guarded>
+          </AuthPagesGuard>
         }
       />
 
-      {/* Home screens (requires auth) */}
+      {/* Citizen home screens (requires auth + citizen role) */}
       <Route
         path="/citizen"
         element={
-          <Guarded>
-            <CitizenHomeScreen />
-          </Guarded>
+          <CitizenGuard>
+            <Guarded>
+              <CitizenHomeScreen />
+            </Guarded>
+          </CitizenGuard>
         }
       />
       <Route
         path="/store"
         element={
-          <Guarded>
-            <StoreHomeScreen />
-          </Guarded>
+          <StoreGuard>
+            <Guarded>
+              <StoreHomeScreen />
+            </Guarded>
+          </StoreGuard>
         }
       />
 
